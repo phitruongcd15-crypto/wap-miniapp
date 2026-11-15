@@ -6,7 +6,7 @@
 <title>Mini App</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-  /* WAP Mini App · Gói 5 · phiên bản 1.1 (tên hiển thị "Mini App") · phong cách tối giản kiểu iOS */
+  /* WAP Mini App · Gói 5 · phiên bản 1.2 (tên hiển thị "Mini App"; nút báo cáo đóng app) · phong cách tối giản kiểu iOS */
   :root {
     --bg: #f2f2f7; --card: #ffffff; --text: #000000; --sub: #8e8e93; --head: #6d6d72;
     --sep: #c6c6c8; --blue: #007aff; --red: #ff3b30; --orange: #ff9500; --green: #34c759; --purple: #af52de;
@@ -108,9 +108,11 @@ function $(id) { return document.getElementById(id); }
 function haptic(type) { try { tg.HapticFeedback.notificationOccurred(type); } catch (e) {} }
 function tap() { try { tg.HapticFeedback.selectionChanged(); } catch (e) {} }
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2600); }
-function openLink(url) {
+function openLink(url, closeAfter) {
   if (!url) return;
   try { if (/^https:\/\/t\.me\//.test(url)) tg.openTelegramLink(url); else tg.openLink(url); } catch (e) { window.open(url, "_blank"); }
+  // 1.2: nút "Mở tin giao việc để báo cáo" đóng Mini App sau khi chuyển sang tin trong nhóm
+  if (closeAfter) setTimeout(() => { try { tg.close(); } catch (e) {} }, 300);
 }
 function applyTheme() { document.documentElement.dataset.theme = (tg && tg.colorScheme === "dark") ? "dark" : "light"; try { tg.setHeaderColor("secondary_bg_color"); tg.setBackgroundColor("secondary_bg_color"); } catch (e) {} }
 
@@ -215,7 +217,7 @@ function viewMine(d) {
   } else {
     body = '<div class="hd">' + labels[k] + '</div><div class="grp">' + list.map(it =>
       row({ title: it.title, sub: it.sub, extra: it.checkin ? '<div class="s orange">Chờ bạn trả lời báo cáo tiến độ</div>' : '', right: it.right, tone: it.tone, onclick: "push({type:'task',id:'" + it.id + "',title:'Chi tiết việc'})" }) +
-      ((k === "overdue" || k === "today") && it.link ? '<button class="lnk" onclick="openLink(\'' + esc(it.link) + '\')">Mở tin giao việc để báo cáo</button>' : '')
+      ((k === "overdue" || k === "today") && it.link ? '<button class="lnk" onclick="openLink(\'' + esc(it.link) + '\', true)">Mở tin giao việc để báo cáo</button>' : '')
     ).join("") + '</div>';
   }
   return navBar() + '<div class="lt">' + (S.me.isAdmin ? "Của tôi" : "Việc của tôi") + '</div><div class="subt">' + esc(parts.join(" · ")) + '</div>' +
@@ -232,7 +234,7 @@ function viewTask(t) {
   if (t.reported) h += '<div class="hd">Báo cáo lúc ' + esc(t.reportAt) + '</div><div class="grp"><div class="blk">' + esc(t.reportMessage || "(không có chữ)") + '</div></div>';
   if (t.extension) h += '<div class="hd">Gia hạn</div><div class="grp"><div class="blk">' + esc(t.extension) + '</div></div>';
   if (t.log.length) h += '<div class="hd">Nhật ký tiến độ</div><div class="grp">' + t.log.map(l => '<div class="blk"><b>' + esc(l.head) + '</b>\n' + esc(l.body) + '</div>').join("") + '</div>';
-  if (t.link && !t.completed) h += '<button class="btn pri wide" onclick="openLink(\'' + esc(t.link) + '\')">Mở tin giao việc để báo cáo</button><div class="ft">Mở đúng tin trong nhóm. Reply tin đó (kèm ảnh nếu cần) để báo cáo hoàn thành.</div>';
+  if (t.link && !t.completed) h += '<button class="btn pri wide" onclick="openLink(\'' + esc(t.link) + '\', true)">Mở tin giao việc để báo cáo</button><div class="ft">Mini App sẽ đóng và mở đúng tin trong nhóm. Reply tin đó (kèm ảnh nếu cần) để báo cáo hoàn thành.</div>';
   else if (t.link) h += '<button class="btn plain wide" onclick="openLink(\'' + esc(t.link) + '\')">Xem tin giao việc</button>';
   return h;
 }
